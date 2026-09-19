@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['id', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.email is string && data.email.size() <= 256
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 120))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1024))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserDocument(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'documentType', 'plainSummary', 'urgency', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'title', 'documentType', 'urgency', 'urgencyNote', 'deadline', 'plainSummary', 'originalText', 'inputLanguage', 'outputLanguage', 'atAGlance', 'nextSteps', 'callScript', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.title is string && data.title.size() <= 200
+        && data.documentType is string && data.documentType.size() <= 120
+        && data.urgency in ['immediate', 'soon', 'info', 'resolved']
+        && (!('urgencyNote' in data) || (data.urgencyNote is string && data.urgencyNote.size() <= 250))
+        && (!('deadline' in data) || (data.deadline is string && data.deadline.size() <= 120))
+        && data.plainSummary is string && data.plainSummary.size() <= 10000
+        && (!('originalText' in data) || (data.originalText is string && data.originalText.size() <= 50000))
+        && (!('inputLanguage' in data) || (data.inputLanguage is string && data.inputLanguage.size() <= 20))
+        && (!('outputLanguage' in data) || (data.outputLanguage is string && data.outputLanguage.size() <= 20))
+        && (!('atAGlance' in data) || data.atAGlance is map)
+        && (!('nextSteps' in data) || (data.nextSteps is list && data.nextSteps.size() <= 25))
+        && (!('callScript' in data) || (data.callScript is string && data.callScript.size() <= 10000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // User Profile Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().id == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']);
+      allow delete: if false;
+
+      // User Saved Documents Subcollection
+      match /documents/{documentId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(documentId) && request.auth.uid == userId;
+        allow list: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+        allow create: if isSignedIn() && isValidId(userId) && isValidId(documentId) && request.auth.uid == userId
+          && isValidUserDocument(incoming())
+          && incoming().userId == request.auth.uid
+          && incoming().id == documentId
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isSignedIn() && isValidId(userId) && isValidId(documentId) && request.auth.uid == userId
+          && isValidUserDocument(incoming())
+          && incoming().userId == existing().userId
+          && incoming().id == existing().id
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'nextSteps', 'updatedAt', 'outputLanguage']);
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(documentId) && request.auth.uid == userId;
+      }
+    }
+  }
+}

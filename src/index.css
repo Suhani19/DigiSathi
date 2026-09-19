@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Merriweather", Georgia, serif;
+  --font-sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-warm-bg: #FBF9F5;
+  --color-warm-low: #F5F3EF;
+  --color-warm-container: #EFEEEA;
+  --color-warm-white: #FFFFFF;
+  --color-warm-ink: #1B1C1A;
+  --color-warm-variant: #414846;
+  --color-warm-primary: #1E3A34;
+  --color-warm-secondary: #0F2942;
+  --color-warm-alert: #C05621;
+  --color-warm-error: #BA1A1A;
+  --color-warm-border: #D6CEC2;
+}
+
+:root {
+  --font-scale: 1;
+}
+
+body {
+  font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #FBF9F5;
+  color: #1B1C1A;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.high-contrast .surface-card {
+  background-color: #ffffff !important;
+  border-color: #000000 !important;
+  border-width: 2px !important;
+}
+
+.high-contrast .text-variant {
+  color: #000000 !important;
+}
+
+/* Focus styles: Visible 3px focus rings on every interactive element */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 3px solid #0F2942 !important;
+  outline-offset: 2px !important;
+}
+
+/* Print styles for Ready-to-Use Scripts & Dispute Letters */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-large {
+    font-size: 22pt !important;
+    line-height: 1.6 !important;
+  }
+}
